@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "mathlog-minesweeper", "mathlog-minesweeper.fsproj", "{DD9742F9-598E-4A17-A484-D5CF22791918}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DD9742F9-598E-4A17-A484-D5CF22791918}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD9742F9-598E-4A17-A484-D5CF22791918}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD9742F9-598E-4A17-A484-D5CF22791918}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD9742F9-598E-4A17-A484-D5CF22791918}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
