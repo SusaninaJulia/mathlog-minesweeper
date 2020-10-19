@@ -39,7 +39,7 @@ let main argv =
     DPLLForMinesweeper field5
     printfn "field №6:"
     DPLLForMinesweeper field6
-    printfn "field №7:"
+    printfn ""
     
     printfn "field №1:"
     DPLLForMinesweeperCheckCell field1 0 0

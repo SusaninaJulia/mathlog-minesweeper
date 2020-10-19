@@ -55,7 +55,6 @@ let TSEYTINFromArray (fs: array<Formula>) maxind =
 type Flag = 
     | SAT
     | UNSAT
-    | NEXT
 
 let EliminatePureLiteral(S: list<list<int>>, l : int) =
      List.filter (fun (el : list<int>) -> not (List.length(el) = 1 && el.[0] = l)) S
@@ -74,7 +73,7 @@ let rec DPLL (S: list<list<int>>, M : Set<int>) =
         then  (SAT, M1)
         else
             if Set.exists (fun el -> Set.exists ((=) -el) M1) M1
-            then (NEXT, Set.empty)
+            then (UNSAT, Set.empty)
             else
                 let pvs = List.concat S1 |> Set.ofList
                 let pures = Set.filter (fun el -> not (Set.exists ((=) -el) pvs)) pvs 
