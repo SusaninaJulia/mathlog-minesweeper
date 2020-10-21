@@ -11,7 +11,6 @@ type Cell =
 let formulaForNumberCell k i j N M = 
     let R, C = N-1, M-1
     let rec formulaForNumberCell k n (x, y) =
-        //printfn "NM = %A %A ij = %A %A xy = %A %A  k n = %A %A" N M i j x y k n 
         let next = 
             let tmp = 
                 match (x, y) with
@@ -59,15 +58,10 @@ let formulaForField (fld: array<array<Cell>>): int list list =
             match fld.[i].[j] with
             | Empty -> ()
             | _ -> formulas.Add(formulaForCell fld.[i].[j] i j N M)
-    //Array.iter (fun (f : Formula) -> System.Console.WriteLine(f)) (formulas.ToArray())
     TSEYTINFromArray (formulas.ToArray()) (M*N) 
         
 let DPLLForMinesweeper field = 
     let nconjs = formulaForField field   
-//    printfn "Tseityn transformation:"
-//    for el in nconjs do
-//        List.iter (fun i -> printf "%i " i) el
-//        printfn ""
     let (sat, model) = DPLL(nconjs, Set.empty) 
     if sat = SAT
     then 
