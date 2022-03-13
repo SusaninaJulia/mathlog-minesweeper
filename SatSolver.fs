@@ -1,90 +1,88 @@
-module minesweeper.Minesweeper
+module minesweeper.SatSolver
 
-open minesweeper.SatSolver
 open System.Collections.Generic
 
-type Cell =
-    | Number of int
-    | Bomb
-    | Empty
+type Formula = 
+    | PV of int 
+    | NOT of Formula
+    | OR of Formula * Formula
+    | AND of Formula * Formula
     
-exception Error of string
-   
-let neighbourCells i j N M =
-    [|(i-1, j-1); (i, j-1); (i+1, j-1); (i-1, j); (i+1, j); (i-1, j+1); (i, j+1); (i+1, j+1) |]
-    |> Array.filter (fun (x, y) -> x >= 0 && x < N && y >= 0 && y < M )
-    
-let formulaForNumberCell k i j N M =
-//    let R, C = N-1, M-1
-    let nbrs = neighbourCells i j N M
-    printfn "For %i %i %A" i j nbrs 
-    let rec formulaForNumberCell k n current =
-        let (x, y) = nbrs.[current]
-        let next = current + 1
-//        let next = 
-//            let tmp = 
-//                match (x, y) with
-//                | (_, tmp) when tmp = j+1 -> if j = 0 then (x+1, 0) else (x+1, j-1)
-//                | (_, tmp) when tmp = j -> if j = R then (x+1, j-1) else (x, y+1)
-//                | (_, _) -> (x, y+1)
-//            if tmp = (i, j) then (if j = R then (i+1, j-1) else (i, j+1)) else tmp
-        let var = x*N+y+1
-        if n = 1
-        then 
-            if k = n 
-            then PV(var)
-            elif k = 0
-            then NOT(PV(var))
-            else  failwith "UNSAT with Error: wrong configuration (number of bombs is greater that number of empty cells)"
-        elif k = n 
-        then AND(PV(var), formulaForNumberCell (n-1) (n-1) next)
-        elif k = 0
-        then AND(NOT(PV(var)), formulaForNumberCell 0 (n-1) next)
-        else AND(OR(NOT(PV(var)), formulaForNumberCell (k-1) (n-1) next) , OR(PV(var), formulaForNumberCell k (n-1) next))
-    formulaForNumberCell k nbrs.Length 0
-//    match (i, j) with
-//    | (0, 0) -> formulaForNumberCell k 3 (i, j+1)
-//    | (0, tmp) when tmp = R -> formulaForNumberCell k 3 (i, j-1)
-//    | (0, _) -> formulaForNumberCell k 5 (i, j-1)
-//    | (tmp, 0) when tmp = C -> formulaForNumberCell k 3 (i-1, j)
-//    | (tmp1, tmp2) when tmp1 = C && tmp2 = R -> formulaForNumberCell k 3 (i-1, j-1)
-//    | (tmp, _) when tmp = C -> formulaForNumberCell k 5 (i-1, j-1)
-//    | (_, 0) -> formulaForNumberCell k 5 (i-1, j)
-//    | (_, tmp) when tmp = R -> formulaForNumberCell k 5 (i-1, j-1)
-//    | (_, _) -> formulaForNumberCell k 8 (i-1, j-1)
+let rec VariablesNumber (f : Formula)  =
+    let max a b = if a > b then a else b
+    match f with 
+    | PV p -> abs p
+    | NOT phi -> abs (VariablesNumber phi)
+    | AND (phi1, phi2) -> max (VariablesNumber phi1) (VariablesNumber phi2)
+    | OR (phi1, phi2) -> max (VariablesNumber phi1) (VariablesNumber phi2)
 
+let rec CNF(f: Formula, conjs: list<list<int>>, newp: int) =
+    match f with
+    | PV p -> 
+        (p, conjs, newp)
+    | NOT phi -> 
+        let (nf, nconjs, newp) = CNF(phi, conjs, newp)
+        (-nf, nconjs, newp)
+    | AND (phi1, phi2) ->   
+        let (nf1, nconjs1, newp1) = CNF(phi1, conjs, newp)
+        let (nf2, nconjs2, newp2) = CNF(phi2, nconjs1, newp1)
+        let np = newp2 + 1
+        let nconjs = nconjs2 @ [[-np; nf1]; [-np; nf2]; [-nf1; -nf2; np]]
+        (np, nconjs, np)
+    | OR (phi1, phi2) ->
+        let (nf1, nconjs1, newp1) = CNF(phi1, conjs, newp)
+        let (nf2, nconjs2, newp2) = CNF(phi2, nconjs1, newp1)
+        let np = newp2 + 1
+        let nconjs = nconjs2 @ [[np; -nf1]; [np; -nf2]; [nf1; nf2; -np]]
+        (np, nconjs, np)
     
-let formulaForCell c i j N M = 
-    match c with
-    | Number nmb -> AND(formulaForNumberCell nmb i j N M, NOT(PV(i*N+j+1)))
-    | Bomb -> PV(i*N+j+1)
-    | Empty -> failwith "empty without formula!!"
-    
-let formulaForField (fld: array<array<Cell>>): int list list = 
-    let N = (fld.[0]).Length
-    let M = fld.Length
-    let formulas = new List<Formula>()
-    for i in 0 .. M - 1 do
-        for j in 0 .. N - 1 do
-            match fld.[i].[j] with
-            | Empty -> ()
-            | _ -> formulas.Add(formulaForCell fld.[i].[j] i j N M)
-    TSEYTINFromArray (formulas.ToArray()) (M*N) 
+let TSEYTIN (f: Formula) = 
+    let (pv, cnjs, _) = CNF(f, [], VariablesNumber(f))
+    [pv] :: cnjs
+   
+let TSEYTINFromArray (fs: array<Formula>) maxind = 
+    let (pv, cnjs, nv) = CNF(fs.[0], [], maxind)
+    let mutable mnv = nv
+    let tsf = new List<list<list<int>>>()
+    tsf.Add([pv] :: cnjs)
+    for i in 1 .. fs.Length - 1 do
+        let (npv, ncnjs, nnv) = CNF(fs.[i], [], mnv)
+        mnv <- nnv
+        tsf.Add([npv] :: ncnjs)
+    tsf.ToArray() |> List.concat
         
-let DPLLForMinesweeper field = 
-    let nconjs = formulaForField field
-    let (sat, model) = DPLL(nconjs, Set.empty) 
-    if sat = SAT
-    then 
-        printfn "DPLL result: SAT"
-        printfn "Model: %A" model
-        model |> Seq.filter (fun x -> abs(x) <= (field.Length*field.[0].Length))|> Seq.iter (fun x -> printf "%d " x)
-        printfn ""
-    else printfn "DPLL result: UNSAT"
     
-let DPLLForMinesweeperCheckCell (fld: array<array<Cell>>) i j =
-    match fld.[i].[j] with
-    | Empty -> fld.[i].[j] <- Bomb
-    | Bomb -> ()
-    | Number _ -> failwith "this cell is not empty or a bomb"
-    DPLLForMinesweeper fld
+type Flag = 
+    | SAT
+    | UNSAT
+    
+let UnitPropagate(S: list<list<int>>, l : int) =
+    List.filter (fun C -> not (List.exists ((=) l) C)) S
+    |> List.map (fun el -> List.filter (fun el2 -> el2 <> -l) el) 
+    
+let rec DPLL (S: list<list<int>>, M : Set<int>) = 
+    let units = List.filter (fun el -> List.length(el) = 1) S 
+                |> List.concat |> Set.ofList
+    let S1 = List.fold (fun S1 el -> UnitPropagate(S1, el)) S (Set.toList units)
+    let M1 = Set.union M units
+    if List.isEmpty S1
+        then  (SAT, M1)
+        else
+            if Set.exists (fun el -> Set.exists ((=) -el) M1) M1
+            then (UNSAT, Set.empty)
+            else
+                let pvs = List.concat S1 |> Set.ofList
+                let pures = Set.filter (fun el -> not (Set.exists ((=) -el) pvs)) pvs 
+                let S2 = List.fold (fun S2 el -> UnitPropagate(S2, el)) S1 (Set.toList pures) 
+                let M2 = Set.union M1 pures
+                if List.isEmpty S2
+                then (SAT, M2)
+                else
+                    if List.exists (List.isEmpty) S2
+                    then (UNSAT, Set.empty)
+                    else 
+                        let l = S2.[0].[0]
+                        let (flag, m) = DPLL([l] :: S2, M2.Add(l))
+                        if flag = SAT
+                        then (flag, m)
+                        else DPLL([-l] :: S2, M2.Add(-l))
