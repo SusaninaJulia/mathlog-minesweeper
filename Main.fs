@@ -1,4 +1,4 @@
-﻿module minesweeper.Main
+module minesweeper.Main
 
 open minesweeper.Minesweeper
 
@@ -23,7 +23,10 @@ let field5 = [|[|    Empty;     Number(3);     Empty|];
 
 let field6 = [|[|    Empty;     Number(5);     Empty|];
                [|    Empty;     Empty;         Empty|];
-               [|     Bomb;     Empty;     Number(1)|]|] 
+               [|     Bomb;     Empty;     Number(1)|]|]
+
+let newTest1 = [|[|    Empty;    Number(1);    Empty;    Empty |]|]
+let newTest2 = [|[|    Number(2);    Empty;    Empty |]|]
 
 [<EntryPoint>]
 let main argv =
@@ -53,4 +56,11 @@ let main argv =
     DPLLForMinesweeperCheckCell field5 0 0
     printfn "field №6:"
     DPLLForMinesweeperCheckCell field6 0 0
+    
+    printfn "newTest1:"
+    DPLLForMinesweeper newTest1
+    
+    printfn "newTest2:"
+    DPLLForMinesweeper newTest2
+    
     0 
